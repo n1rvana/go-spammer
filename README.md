@@ -1,2 +1,3 @@
 # go-spammer
-Channels in go don't work like I expect, so I'm testing them out here.
+
+Several ways of reading data off of channels are shown in this code.  Most of them block.  So, if you have a go routine managing multiple channels, you want to use select.
