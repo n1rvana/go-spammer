@@ -20,6 +20,7 @@ var (
 	forSpam    chan string
 	selectA    chan string
 	selectB    chan string
+	collection []chan string
 )
 
 func main() {
@@ -28,11 +29,15 @@ func main() {
 	forSpam = make(chan string, 100)
 	selectA = make(chan string, 100)
 	selectB = make(chan string, 100)
+	for index := 0; index < 50; index++ {
+		collection = append(collection, make(chan string, 100))
+	}
 	go spammer()
 	go little()
 	go ranger()
 	go forloop()
 	go selectLoop()
+	go lenTest()
 	time.Sleep(time.Second * 30)
 
 }
@@ -41,16 +46,18 @@ func spammer() {
 	count := 0
 	for {
 		message := fmt.Sprintf("Spam #%d", count)
-		if 5 > count {
+		if 15 > count {
 			littleSpam <- message
-
+			for _, channel := range collection {
+				channel <- message
+			}
 		}
 		selectA <- message
 		selectB <- message
 		forSpam <- message
 		rangeSpam <- message
 		count++
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 1)
 
 	}
 }
@@ -86,5 +93,23 @@ func selectLoop() {
 
 		}
 
+	}
+}
+
+// But maybe you have an unknown number of channels, say in an array, and you need to process them
+// all regularly, so you can't use select.  In this case you use len(channel) to determine if there
+// are any messages waiting
+
+func lenTest() {
+	time.Sleep(time.Second * 10) // let some messages accumulate
+	for {                        // keep checking the channels
+		for index, currChannel := range collection {
+			for 0 < len(currChannel) { // effectively "While there are messages"
+				message := <-currChannel
+				fmt.Printf("lenTest: channel %d got message %s\n", index, message)
+			}
+		}
+		fmt.Printf("lenTest: Outside the channel loop - should keep printing even after 15 messages (when we're getting no more messages)")
+		time.Sleep(time.Second * 1) // slow the loop down
 	}
 }
